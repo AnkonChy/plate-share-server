@@ -48,6 +48,14 @@ async function run() {
       const result = await foodCollection.findOne(query);
       res.send(result);
     });
+
+    //featured food in home with 6 value sort by quantity
+    app.get("/featured-foods", async (req, res) => {
+      const sort = { quantity: 1 };
+      const result = await foodCollection.find().sort(sort).limit(6).toArray();
+      res.send(result);
+    });
+
     console.log("db connected");
   } finally {
   }
