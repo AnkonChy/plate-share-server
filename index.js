@@ -60,8 +60,14 @@ async function run() {
 
     //add food request api
     app.post("/addFoodRequest", async (req, res) => {
-      //1.save food request
       const requestData = req.body;
+      //0.
+      const query = { email: requestData.email, jobId: requestData.jobId };
+      const alreadyExist = await requestCollection.findOne(query);
+      if (alreadyExist)
+        return res.status(400).send("You have already request this food");
+      //1.save food request
+
       const result = await requestCollection.insertOne(requestData);
 
       //2.change status in food collection
@@ -69,6 +75,15 @@ async function run() {
       const update = { $set: { status: "requested" } };
       const updateStatus = await foodCollection.updateOne(filter, update);
 
+      res.send(result);
+    });
+
+    //manage my food by email filter
+    app.get("/manageMyFood", async (req, res) => {
+      const email = req.query.email;
+      const result = await foodCollection
+        .find({ donatorEmail: email })
+        .toArray();
       res.send(result);
     });
 
