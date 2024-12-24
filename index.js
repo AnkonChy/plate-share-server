@@ -1,7 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 const app = express();
 const port = process.env.PORT || 4000;
@@ -38,6 +38,14 @@ async function run() {
     //show all avaiable food
     app.get("/all-available-foods", async (req, res) => {
       const result = await foodCollection.find().toArray();
+      res.send(result);
+    });
+
+    //food details api
+    app.get("/food/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await foodCollection.findOne(query);
       res.send(result);
     });
     console.log("db connected");
