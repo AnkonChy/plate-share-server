@@ -87,6 +87,31 @@ async function run() {
       res.send(result);
     });
 
+    //delete food from manageMyFood page
+    app.delete("/food/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await foodCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    //update food
+    app.put("/food/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const data = req.body;
+      const updatedFood = {
+        $set: {
+          name: data?.name,
+          quantity: data?.quantity,
+          expDate: data?.expDate,
+          pickLocation: data?.pickLocation,
+        },
+      };
+
+      const result = await foodCollection.updateOne(query, updatedFood);
+      res.send(result);
+    });
     console.log("db connected");
   } finally {
   }
