@@ -23,6 +23,7 @@ async function run() {
   try {
     const db = client.db("plate-share");
     const foodCollection = db.collection("foods");
+    const requestCollection = db.collection("food-request");
 
     app.get("/", (req, res) => {
       res.send("Hello from plateshare");
@@ -37,7 +38,8 @@ async function run() {
 
     //show all avaiable food
     app.get("/all-available-foods", async (req, res) => {
-      const result = await foodCollection.find().toArray();
+      const query = { status: "available" };
+      const result = await foodCollection.find(query).toArray();
       res.send(result);
     });
 
@@ -53,6 +55,20 @@ async function run() {
     app.get("/featured-foods", async (req, res) => {
       const sort = { quantity: 1 };
       const result = await foodCollection.find().sort(sort).limit(6).toArray();
+      res.send(result);
+    });
+
+    //add food request api
+    app.post("/addFoodRequest", async (req, res) => {
+      //1.save food request
+      const requestData = req.body;
+      const result = await requestCollection.insertOne(requestData);
+
+      //2.change status in food collection
+      const filter = { _id: new ObjectId(requestData.foodId) };
+      const update = { $set: { status: "requested" } };
+      const updateStatus = await foodCollection.updateOne(filter, update);
+
       res.send(result);
     });
 
