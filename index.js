@@ -49,6 +49,7 @@ async function run() {
     const db = client.db("plate-share");
     const foodCollection = db.collection("foods");
     const requestCollection = db.collection("food-request");
+    const donationCollection = db.collection("donation");
 
     // jwt api
     app.post("/jwt", (req, res) => {
@@ -218,6 +219,12 @@ async function run() {
     app.get("/top-donator", async (req, res) => {
       const sort = { quantity: -1 };
       const result = await foodCollection.find().sort(sort).limit(3).toArray();
+      res.send(result);
+    });
+
+    //donation
+    app.get("/donation", async (req, res) => {
+      const result = await donationCollection.find().toArray();
       res.send(result);
     });
     console.log("db connected");
