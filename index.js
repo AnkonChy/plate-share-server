@@ -39,13 +39,18 @@ async function run() {
     //show all avaiable food
     app.get("/all-available-foods", async (req, res) => {
       const { searchParams } = req.query;
+      const { sort } = req.query;
 
-      let option = {};
-      if (searchParams) {
-        option = { name: { $regex: searchParams, $options: "i" } };
+      let options = {};
+      if (sort) {
+        options = { sort: { expDate: sort === "asc" ? 1 : -1 } };
       }
-      const query = { status: "available" };
-      const result = await foodCollection.find(query).toArray();
+      let query = { status: "available" };
+      if (searchParams) {
+        query = { name: { $regex: searchParams, $options: "i" } };
+      }
+
+      const result = await foodCollection.find(query, options).toArray();
       res.send(result);
     });
 
