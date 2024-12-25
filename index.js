@@ -62,7 +62,10 @@ async function run() {
     app.post("/addFoodRequest", async (req, res) => {
       const requestData = req.body;
       //0.
-      const query = { email: requestData.email, jobId: requestData.jobId };
+      const query = {
+        donatorEmail: requestData.email,
+        foodId: requestData.foodId,
+      };
       const alreadyExist = await requestCollection.findOne(query);
       if (alreadyExist)
         return res.status(400).send("You have already request this food");
@@ -112,6 +115,34 @@ async function run() {
       const result = await foodCollection.updateOne(query, updatedFood);
       res.send(result);
     });
+
+    // my food request by email filter
+    app.get("/foodRequest", async (req, res) => {
+      const email = req.query.email;
+      const result = await requestCollection
+        .find({ donatorEmail: email })
+        .toArray();
+      res.send(result);
+    });
+
+    //delete food from foodRequest page
+    app.delete("/foodRequest/:id", async (req, res) => {
+      const id = req.params.id;
+      const request = await requestCollection.findOne({
+        _id: new ObjectId(id),
+      });
+      const filter = { _id: new ObjectId(request.foodId) };
+      const update = { $set: { status: "available" } };
+      const updateStatus = await foodCollection.updateOne(filter, update);
+
+      const query = { _id: new ObjectId(id) };
+      const result = await requestCollection.deleteOne(query);
+
+      //2.change status in food collection
+
+      res.send(result);
+    });
+
     console.log("db connected");
   } finally {
   }
