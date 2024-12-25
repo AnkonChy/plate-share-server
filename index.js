@@ -2,12 +2,37 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
 
 const app = express();
 const port = process.env.PORT || 4000;
 
-app.use(cors());
+const corsOptions = {
+  origin: ["http://localhost:5173"],
+  credentials: true,
+  optionalSuccessStatus: 200,
+};
+app.use(cors(corsOptions));
 app.use(express.json());
+app.use(cookieParser());
+
+const verifyToken = (req, res, next) => {
+  const token = req.cookies?.token;
+
+  if (!token) {
+    return res.status(401).send({ message: "unauthorized access" });
+  }
+
+  // verify the token
+  jwt.verify(token, process.env.SECRET_KEY, (err, decoded) => {
+    if (err) {
+      return res.status(401).send({ message: "unauthorized access" });
+    }
+    req.user = decoded;
+    next();
+  });
+};
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.ri84s.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
@@ -25,6 +50,38 @@ async function run() {
     const foodCollection = db.collection("foods");
     const requestCollection = db.collection("food-request");
 
+    // jwt api
+    app.post("/jwt", (req, res) => {
+      const user = req.body;
+      //create token
+      const token = jwt.sign(user, process.env.SECRET_KEY, {
+        expiresIn: "5h",
+      });
+      console.log(token);
+      res
+        .cookie("token", token, {
+          httpOnly: true,
+          secure: false,
+          // secure: process.env.NODE.ENV === "production",
+          // sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+        })
+        .send({ success: true });
+    });
+
+    // //logout || clear cookie from browser
+    app.post("/logout", (req, res) => {
+      res
+        .clearCookie("token", {
+          // maxAge: 0,
+          httpOnly: true,
+          secure: false,
+
+          // secure: process.env.NODE.ENV === "production",
+          // sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+        })
+        .send({ success: true });
+    });
+
     app.get("/", (req, res) => {
       res.send("Hello from plateshare");
     });
@@ -40,7 +97,6 @@ async function run() {
     app.get("/all-available-foods", async (req, res) => {
       const { searchParams } = req.query;
       const { sort } = req.query;
-
       let options = {};
       if (sort) {
         options = { sort: { expDate: sort === "asc" ? 1 : -1 } };
@@ -64,7 +120,7 @@ async function run() {
 
     //featured food in home with 6 value sort by quantity
     app.get("/featured-foods", async (req, res) => {
-      const sort = { quantity: 1 };
+      const sort = { quantity: -1 };
       const result = await foodCollection.find().sort(sort).limit(6).toArray();
       res.send(result);
     });
@@ -93,8 +149,12 @@ async function run() {
     });
 
     //manage my food by email filter
-    app.get("/manageMyFood", async (req, res) => {
+    app.get("/manageMyFood", verifyToken, async (req, res) => {
       const email = req.query.email;
+
+      if (req.user.email !== req.query.email) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
       const result = await foodCollection
         .find({ donatorEmail: email })
         .toArray();
@@ -154,6 +214,12 @@ async function run() {
       res.send(result);
     });
 
+    //top donator
+    app.get("/top-donator", async (req, res) => {
+      const sort = { quantity: -1 };
+      const result = await foodCollection.find().sort(sort).limit(3).toArray();
+      res.send(result);
+    });
     console.log("db connected");
   } finally {
   }
