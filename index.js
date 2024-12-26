@@ -195,10 +195,14 @@ async function run() {
     });
 
     // my food request by email filter
-    app.get("/foodRequest", async (req, res) => {
+    app.get("/foodRequest", verifyToken, async (req, res) => {
       const email = req.query.email;
+
+      if (req.user.email !== req.query.email) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
       const result = await requestCollection
-        .find({ donatorEmail: email })
+        .find({ requestedEmail: email })
         .toArray();
       res.send(result);
     });
