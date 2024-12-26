@@ -9,7 +9,11 @@ const app = express();
 const port = process.env.PORT || 4000;
 
 const corsOptions = {
-  origin: ["http://localhost:5173"],
+  origin: [
+    "http://localhost:5173",
+    "https://plate-share-42586.firebaseapp.com",
+    "https://plate-share-42586.web.app",
+  ],
   credentials: true,
   optionalSuccessStatus: 200,
 };
@@ -58,13 +62,13 @@ async function run() {
       const token = jwt.sign(user, process.env.SECRET_KEY, {
         expiresIn: "5h",
       });
-      console.log(token);
+
       res
         .cookie("token", token, {
           httpOnly: true,
-          secure: false,
-          // secure: process.env.NODE.ENV === "production",
-          // sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+          // secure: false,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
         })
         .send({ success: true });
     });
@@ -75,10 +79,10 @@ async function run() {
         .clearCookie("token", {
           // maxAge: 0,
           httpOnly: true,
-          secure: false,
+          // secure: false,
 
-          // secure: process.env.NODE.ENV === "production",
-          // sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+          secure: process.env.NODE_ENV === "production",
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
         })
         .send({ success: true });
     });
@@ -131,10 +135,12 @@ async function run() {
       const requestData = req.body;
       //0.
       const query = {
-        donatorEmail: requestData.email,
+        requestedEmail: requestData.requestedEmail,
         foodId: requestData.foodId,
       };
       const alreadyExist = await requestCollection.findOne(query);
+      console.log(alreadyExist);
+      console.log("request data", requestData);
       if (alreadyExist)
         return res.status(400).send("You have already request this food");
       //1.save food request
@@ -203,7 +209,7 @@ async function run() {
       const request = await requestCollection.findOne({
         _id: new ObjectId(id),
       });
-      const filter = { _id: new ObjectId(request.foodId) };
+      const filter = { _id: new ObjectId(request?.foodId) };
       const update = { $set: { status: "available" } };
       const updateStatus = await foodCollection.updateOne(filter, update);
 
@@ -218,7 +224,7 @@ async function run() {
     //top donator
     app.get("/top-donator", async (req, res) => {
       const sort = { quantity: -1 };
-      const result = await foodCollection.find().sort(sort).limit(3).toArray();
+      const result = await foodCollection.find().sort(sort).limit(4).toArray();
       res.send(result);
     });
 
