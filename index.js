@@ -123,10 +123,10 @@ async function run() {
       res.send(result);
     });
 
-    //featured food in home with 6 value sort by quantity
+    // featured food in home with 8 value sort by quantity
     app.get("/featured-foods", async (req, res) => {
       const sort = { quantity: -1 };
-      const result = await foodCollection.find().sort(sort).limit(6).toArray();
+      const result = await foodCollection.find().sort(sort).limit(8).toArray();
       res.send(result);
     });
 
